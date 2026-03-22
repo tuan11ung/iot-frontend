@@ -9,8 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-
-const API_BASE_URL = "http://localhost:3000/api";
+import { API_BASE_URL } from '../utils/constants.ts'
 
 interface ActionRecord {
   id: string;
@@ -131,7 +130,7 @@ export function ActionHistoryPage() {
         <button
           key={i}
           onClick={() => setCurrentPage(i)}
-          className={`px-3 py-1 rounded min-w-[32px] border transition-colors ${
+          className={`px-3 py-1 rounded min-w-8 border transition-colors ${
             currentPage === i
               ? "bg-blue-600 text-white border-blue-600"
               : "bg-white text-gray-700 hover:bg-gray-100 border-gray-200"

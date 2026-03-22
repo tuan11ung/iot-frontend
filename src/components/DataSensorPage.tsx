@@ -13,9 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-
-const API_BASE_URL = "http://localhost:3000/api";
-
+import { API_BASE_URL } from '../utils/constants.ts'
 interface SensorRecord {
   id: string;
   temperature: number;
@@ -136,7 +134,7 @@ export function DataSensorPage() {
         <button
           key={i}
           onClick={() => setCurrentPage(i)}
-          className={`px-3 py-1 rounded min-w-[32px] transition-colors ${
+          className={`px-3 py-1 rounded min-w-8 transition-colors ${
             currentPage === i
               ? "bg-blue-600 text-white"
               : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"

@@ -1,4 +1,5 @@
 import { Mail, Phone, Github, FileDown, Book, Figma, Box } from 'lucide-react';
+import { API_ROOT } from '../utils/constants.ts'
 
 export function ProfilePage() {
   const userData = {
@@ -16,7 +17,8 @@ export function ProfilePage() {
   };
 
   const handleAPIDocsClick = () => {
-    console.log('Opening API documentation...');
+    // Mở trang Swagger Docs ở một Tab mới
+    window.open(`${API_ROOT}/api-docs`, '_blank');
   };
 
   return (

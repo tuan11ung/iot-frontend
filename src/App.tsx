@@ -4,9 +4,7 @@ import { DashboardPage } from "./components/DashboardPage";
 import { ProfilePage } from "./components/ProfilePage";
 import { DataSensorPage } from "./components/DataSensorPage";
 import { ActionHistoryPage } from "./components/ActionHistoryPage";
-
-// Khai báo Base URL của Backend Node.js
-const API_BASE_URL = "http://localhost:3000/api";
+import { API_BASE_URL } from './utils/constants.ts'
 
 function App() {
   const [currentPage, setCurrentPage] = useState(() => {
