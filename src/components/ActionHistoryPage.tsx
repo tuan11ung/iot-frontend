@@ -21,21 +21,18 @@ interface ActionRecord {
 }
 
 export function ActionHistoryPage() {
-  // === 1. QUẢN LÝ DỮ LIỆU TỪ BACKEND ===
+  // === 1. QUẢN LÝ DỮ LIỆU & TRẠNG THÁI ===
   const [data, setData] = useState<ActionRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // === 2. QUẢN LÝ PHÂN TRANG ===
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
 
-  // === 3. QUẢN LÝ SẮP XẾP ===
   const [sortField, setSortField] = useState<string>("time");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  // === 4. QUẢN LÝ BỘ LỌC ===
   const [searchKeyword, setSearchKeyword] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   
@@ -55,9 +52,7 @@ export function ActionHistoryPage() {
 
   const [showTimePopover, setShowTimePopover] = useState(false);
 
-  // ==========================================
-  // HÀM FETCH DỮ LIỆU (CÓ THÔNG SỐ SERVER)
-  // ==========================================
+  // === 2. HÀM FETCH DỮ LIỆU TỪ BACKEND (SERVER-SIDE) ===
   const fetchHistoryData = async (showLoading = true) => {
     try {
       if (showLoading) setIsLoading(true);
@@ -80,26 +75,27 @@ export function ActionHistoryPage() {
       const response = await fetch(`${API_BASE_URL}/history?${params}`);
       const result = await response.json();
 
-      const formattedData = result.data.map((item: any) => {
-        const dateObj = new Date(item.requested_at); // Lấy thời gian gửi lệnh
-        const timeString = dateObj.toLocaleString("en-GB", {
+      if (result && result.data) {
+        const formattedData = result.data.map((item: any) => {
+          const dateObj = new Date(item.requested_at);
+          const timeString = dateObj.toLocaleString("en-GB", {
             day: "2-digit", month: "2-digit", year: "numeric",
             hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
-        }).replace(",", "");
+          }).replace(",", "");
 
-        return {
-          id: item._id.slice(-6).toUpperCase(),
-          device: item.device_id, // Lấy tên thiết bị
-          action: item.action,
-          status: item.status, // Pending, Success, Failed...
-          time: timeString
-        };
-      });
+          return {
+            id: item._id.slice(-6).toUpperCase(),
+            device: item.device_id,
+            action: item.action,
+            status: item.status,
+            time: timeString
+          };
+        });
 
-      setData(formattedData);
-      setTotalPages(result.pagination.totalPages);
-      setTotalRecords(result.pagination.totalRecords);
-
+        setData(formattedData);
+        setTotalPages(result.pagination?.totalPages || 1);
+        setTotalRecords(result.pagination?.totalRecords || 0);
+      }
     } catch (error) {
       console.error("Lỗi gọi API History:", error);
     } finally {
@@ -107,16 +103,10 @@ export function ActionHistoryPage() {
     }
   };
 
-  // ==========================================
-  // VÒNG LẶP & LẮNG NGHE SỰ KIỆN
-  // ==========================================
+  // Vòng lặp cập nhật 2 giây/lần
   useEffect(() => {
-    fetchHistoryData(true); // Load có vòng xoay khi đổi trang/filter
-
-    const intervalId = setInterval(() => {
-      fetchHistoryData(false); // Cập nhật ngầm mỗi 2s (Polling)
-    }, 2000);
-
+    fetchHistoryData(true);
+    const intervalId = setInterval(() => fetchHistoryData(false), 2000);
     return () => clearInterval(intervalId);
   }, [
     currentPage, itemsPerPage, sortField, sortDirection, 
@@ -124,13 +114,39 @@ export function ActionHistoryPage() {
     appliedFromDate, appliedToDate, appliedHour, appliedMinute, appliedSecond
   ]);
 
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
+  // === 3. LOGIC HIỂN THỊ NÚT SỐ TRANG ===
+  const renderPaginationButtons = () => {
+    const buttons = [];
+    const maxButtons = 5;
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+    if (endPage - startPage < maxButtons - 1) {
+      startPage = Math.max(1, endPage - maxButtons + 1);
     }
+
+    for (let i = startPage; i <= endPage; i++) {
+      if (i < 1) continue;
+      buttons.push(
+        <button
+          key={i}
+          onClick={() => setCurrentPage(i)}
+          className={`px-3 py-1 rounded min-w-[32px] border transition-colors ${
+            currentPage === i
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-white text-gray-700 hover:bg-gray-100 border-gray-200"
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+    return buttons;
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    else { setSortField(field); setSortDirection("asc"); }
     setCurrentPage(1);
   };
 
@@ -146,48 +162,24 @@ export function ActionHistoryPage() {
   };
 
   const clearFilters = () => {
-    setFilterType("all");
-    setSearchKeyword("");
-    setTempFilterValue(""); setAppliedFilterValue("");
+    setFilterType("all"); setSearchKeyword(""); setTempFilterValue(""); setAppliedFilterValue("");
     setFilterHour(""); setFilterMinute(""); setFilterSecond("");
     setAppliedHour(""); setAppliedMinute(""); setAppliedSecond("");
-    setFromDate(""); setToDate("");
-    setAppliedFromDate(""); setAppliedToDate("");
+    setFromDate(""); setToDate(""); setAppliedFromDate(""); setAppliedToDate("");
     setCurrentPage(1);
   };
 
-  const renderPaginationButtons = () => {
-    const buttons = [];
-    let startPage = Math.max(1, currentPage - 2);
-    let endPage = Math.min(totalPages, startPage + 4);
-    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
-
-    for (let i = startPage; i <= endPage; i++) {
-      buttons.push(
-        <button key={i} onClick={() => setCurrentPage(i)}
-          className={`px-3 py-1 rounded ${currentPage === i ? "bg-blue-600 text-white" : "bg-white text-gray-700 hover:bg-gray-100"}`}
-        >
-          {i}
-        </button>
-      );
-    }
-    return buttons;
-  };
-
-  // ==========================================
-  // UI RENDERING
-  // ==========================================
   return (
     <div className="p-8">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Action History</h2>
 
-      {/* THANH CÔNG CỤ TÌM KIẾM & LỌC */}
+      {/* TOOLBAR TÌM KIẾM & BỘ LỌC */}
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
         <div className="flex items-center gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <Input
-              placeholder="Tìm kiếm (nhấn Enter)..."
+              placeholder="Tìm kiếm (Enter)..."
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') setCurrentPage(1); }}
@@ -203,32 +195,27 @@ export function ActionHistoryPage() {
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="time">Thời gian (Mặc định)</SelectItem>
-              <SelectItem value="id">ID</SelectItem>
-              <SelectItem value="device">Thiết bị</SelectItem>
-              <SelectItem value="action">Hành động</SelectItem>
+              <SelectItem value="time">Sort by Time</SelectItem>
+              <SelectItem value="id">Sort by ID</SelectItem>
+              <SelectItem value="device">Sort by Device</SelectItem>
+              <SelectItem value="action">Sort by Action</SelectItem>
             </SelectContent>
           </Select>
 
           <div className="relative">
             <Button variant="outline" onClick={() => setShowTimePopover(!showTimePopover)}>
-              <SlidersHorizontal className="w-4 h-4 mr-2" />
-              Bộ lọc nâng cao
+              <SlidersHorizontal className="w-4 h-4 mr-2" /> Filter
             </Button>
-
             {showTimePopover && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowTimePopover(false)} />
                 <div className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-xl w-96 p-6 z-50 border border-gray-200">
-                  <h3 className="text-lg font-semibold mb-4">Bộ lọc</h3>
-
+                  <h3 className="text-lg font-semibold mb-4">Bộ lọc lịch sử</h3>
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Tìm kiếm theo cột</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Tìm theo cột</label>
                     <div className="flex gap-2">
                       <Select value={filterType} onValueChange={setFilterType}>
-                        <SelectTrigger className="w-1/2">
-                          <SelectValue placeholder="Chọn..." />
-                        </SelectTrigger>
+                        <SelectTrigger className="w-1/2"><SelectValue/></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Tất cả</SelectItem>
                           <SelectItem value="device">Thiết bị</SelectItem>
@@ -236,38 +223,30 @@ export function ActionHistoryPage() {
                           <SelectItem value="status">Trạng thái</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Input 
-                        placeholder="Nhập giá trị..." 
-                        value={tempFilterValue} 
-                        onChange={(e) => setTempFilterValue(e.target.value)} 
-                        className="w-1/2" 
-                      />
+                      <Input placeholder="Giá trị..." value={tempFilterValue} onChange={(e) => setTempFilterValue(e.target.value)} />
                     </div>
                   </div>
-
                   <div className="mb-4 flex gap-2">
                     <div className="w-1/2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Từ ngày</label>
+                        <label className="text-xs">Từ ngày</label>
                         <Input placeholder="dd/mm/yyyy" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
                     </div>
                     <div className="w-1/2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Đến ngày</label>
+                        <label className="text-xs">Đến ngày</label>
                         <Input placeholder="dd/mm/yyyy" value={toDate} onChange={(e) => setToDate(e.target.value)} />
                     </div>
                   </div>
-
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Thời gian (Giờ:Phút:Giây)</label>
+                  <div className="mb-6">
+                    <label className="text-xs">Giờ:Phút:Giây</label>
                     <div className="grid grid-cols-3 gap-2">
-                      <Input type="number" placeholder="HH" max="23" value={filterHour} onChange={(e) => setFilterHour(e.target.value)} />
-                      <Input type="number" placeholder="MM" max="59" value={filterMinute} onChange={(e) => setFilterMinute(e.target.value)} />
-                      <Input type="number" placeholder="SS" max="59" value={filterSecond} onChange={(e) => setFilterSecond(e.target.value)} />
+                      <Input type="number" placeholder="HH" value={filterHour} onChange={(e) => setFilterHour(e.target.value)} />
+                      <Input type="number" placeholder="MM" value={filterMinute} onChange={(e) => setFilterMinute(e.target.value)} />
+                      <Input type="number" placeholder="SS" value={filterSecond} onChange={(e) => setFilterSecond(e.target.value)} />
                     </div>
                   </div>
-
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={clearFilters} className="flex-1">Xóa bộ lọc</Button>
-                    <Button onClick={applyFilters} className="flex-1 bg-blue-600 hover:bg-blue-700">Áp dụng</Button>
+                    <Button variant="outline" onClick={clearFilters} className="flex-1">Xóa</Button>
+                    <Button onClick={applyFilters} className="flex-1 bg-blue-600">Áp dụng</Button>
                   </div>
                 </div>
               </>
@@ -276,35 +255,23 @@ export function ActionHistoryPage() {
         </div>
       </div>
 
-      {/* BẢNG DỮ LIỆU */}
+      {/* BẢNG DỮ LIỆU LỊCH SỬ */}
       <div className="bg-white rounded-lg shadow-lg overflow-hidden relative">
         {isLoading && (
-            <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
+            <div className="absolute inset-0 bg-white/40 flex items-center justify-center z-10 backdrop-blur-[1px]">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
         )}
         
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-100 border-b border-gray-200">
+            <thead className="bg-gray-100 border-b">
               <tr>
                 <th className="px-6 py-4 text-left font-semibold text-gray-700">Mã (ID)</th>
-                <th className="px-6 py-4 text-left">
-                  <button onClick={() => handleSort("device")} className="flex items-center gap-2 font-semibold text-gray-700 hover:text-gray-900">
-                    Thiết bị <ArrowUpDown className="w-4 h-4" />
-                  </button>
-                </th>
-                <th className="px-6 py-4 text-left">
-                  <button onClick={() => handleSort("action")} className="flex items-center gap-2 font-semibold text-gray-700 hover:text-gray-900">
-                    Hành động <ArrowUpDown className="w-4 h-4" />
-                  </button>
-                </th>
+                <th className="px-6 py-4 text-left font-semibold text-gray-700">Thiết bị</th>
+                <th className="px-6 py-4 text-left font-semibold text-gray-700">Hành động</th>
                 <th className="px-6 py-4 text-left font-semibold text-gray-700">Trạng thái</th>
-                <th className="px-6 py-4 text-left">
-                  <button onClick={() => handleSort("time")} className="flex items-center gap-2 font-semibold text-gray-700 hover:text-gray-900">
-                    Thời gian <ArrowUpDown className="w-4 h-4" />
-                  </button>
-                </th>
+                <th className="px-6 py-4 text-left font-semibold text-gray-700">Thời gian</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -316,12 +283,9 @@ export function ActionHistoryPage() {
                       <td className="px-6 py-4 text-gray-500 font-mono text-sm">#{record.id}</td>
                       <td className="px-6 py-4 text-gray-800 font-medium">{record.device}</td>
                       <td className="px-6 py-4">
-                        <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 border">
-                          {record.action}
-                        </span>
+                        <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 border">{record.action}</span>
                       </td>
                       <td className="px-6 py-4">
-                        {/* Style màu sắc tùy theo trạng thái Database thực tế */}
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                             record.status === "Success" ? "bg-green-100 text-green-700" :
                             record.status === "Pending" ? "bg-yellow-100 text-yellow-700 animate-pulse" :
@@ -338,10 +302,10 @@ export function ActionHistoryPage() {
           </table>
         </div>
 
-        {/* PHÂN TRANG */}
+        {/* PHÂN TRANG UI MỚI */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Hiển thị:</span>
+            <span className="text-sm text-gray-600">Rows per page:</span>
             <Select value={itemsPerPage.toString()} onValueChange={(val) => { setItemsPerPage(Number(val)); setCurrentPage(1); }}>
               <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -350,22 +314,29 @@ export function ActionHistoryPage() {
                 <SelectItem value="50">50</SelectItem>
               </SelectContent>
             </Select>
-            <span className="text-sm text-gray-600 ml-4">
-              Tổng số bản ghi: <strong className="text-gray-900">{totalRecords}</strong>
+            <span className="text-sm text-gray-500 ml-4 italic">
+              {(currentPage - 1) * itemsPerPage + 1}-
+              {Math.min(currentPage * itemsPerPage, totalRecords)} of {totalRecords} records
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}
-              className="px-3 py-1 rounded bg-white text-gray-700 border hover:bg-gray-100 disabled:opacity-50"
+            <button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 rounded border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Trang trước
+              ‹
             </button>
+            
             {renderPaginationButtons()}
-            <button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages || totalPages === 0}
-              className="px-3 py-1 rounded bg-white text-gray-700 border hover:bg-gray-100 disabled:opacity-50"
+            
+            <button
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-3 py-1 rounded border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Trang sau
+              ›
             </button>
           </div>
         </div>
