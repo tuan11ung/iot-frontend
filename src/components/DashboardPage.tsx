@@ -16,6 +16,8 @@ interface DashboardPageProps {
     humidity: number;
     light: number;
   }>;
+  // Khai báo kiểu cho biến loading
+  loadingDevices: { fan: boolean; ac: boolean; light: boolean };
   devices: {
     fan: boolean;
     ac: boolean;
@@ -24,14 +26,21 @@ interface DashboardPageProps {
   onDeviceToggle: (device: 'fan' | 'ac' | 'light') => void;
 }
 
-export function DashboardPage({ sensorData, chartData, devices, onDeviceToggle }: DashboardPageProps) {
+export function DashboardPage({ 
+  sensorData, 
+  chartData, 
+  devices, 
+  loadingDevices, // <-- 1. Nhận biến loadingDevices từ App.tsx truyền xuống
+  onDeviceToggle 
+}: DashboardPageProps) {
+  
   return (
     <div className="p-8">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Dashboard</h2>
       
       {/* Sensor Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-lg p-6 text-white shadow-lg">
+        <div className="bg-linear-to-br from-orange-500 to-red-500 rounded-lg p-6 text-white shadow-lg transform transition duration-300 hover:scale-105">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-orange-100 text-sm font-medium">Nhiệt độ</p>
@@ -41,7 +50,7 @@ export function DashboardPage({ sensorData, chartData, devices, onDeviceToggle }
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg p-6 text-white shadow-lg">
+        <div className="bg-linear-to-br from-blue-500 to-cyan-500 rounded-lg p-6 text-white shadow-lg transform transition duration-300 hover:scale-105">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm font-medium">Độ ẩm</p>
@@ -51,7 +60,7 @@ export function DashboardPage({ sensorData, chartData, devices, onDeviceToggle }
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-yellow-400 to-orange-400 rounded-lg p-6 text-white shadow-lg">
+        <div className="bg-linear-to-br from-yellow-400 to-orange-400 rounded-lg p-6 text-white shadow-lg transform transition duration-300 hover:scale-105">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-yellow-100 text-sm font-medium">Ánh sáng</p>
@@ -68,7 +77,12 @@ export function DashboardPage({ sensorData, chartData, devices, onDeviceToggle }
           <SensorChart data={chartData} />
         </div>
         <div>
-          <DeviceControls devices={devices} onToggle={onDeviceToggle} />
+          {/* 2. Truyền loadingDevices tiếp xuống cho component DeviceControls */}
+          <DeviceControls 
+            devices={devices} 
+            loadingDevices={loadingDevices} 
+            onToggle={onDeviceToggle} 
+          />
         </div>
       </div>
     </div>
