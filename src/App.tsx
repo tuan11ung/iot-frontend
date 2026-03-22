@@ -21,68 +21,25 @@ function App() {
   });
 
   // Chart data with historical values
-  const [chartData, setChartData] = useState([
-    {
-      time: "10:00",
-      temperature: 26,
-      humidity: 70,
-      light: 300,
-    },
-    {
-      time: "10:30",
-      temperature: 26.5,
-      humidity: 69,
-      light: 350,
-    },
-    {
-      time: "11:00",
-      temperature: 27,
-      humidity: 68,
-      light: 400,
-    },
-    {
-      time: "11:30",
-      temperature: 27.5,
-      humidity: 67,
-      light: 450,
-    },
-    {
-      time: "12:00",
-      temperature: 28,
-      humidity: 66,
-      light: 500,
-    },
-    {
-      time: "12:30",
-      temperature: 29,
-      humidity: 64,
-      light: 550,
-    },
-    {
-      time: "13:00",
-      temperature: 28.5,
-      humidity: 65,
-      light: 480,
-    },
-    {
-      time: "13:30",
-      temperature: 28,
-      humidity: 65,
-      light: 450,
-    },
-    {
-      time: "13:30",
-      temperature: 28,
-      humidity: 65,
-      light: 450,
-    },
-    {
-      time: "13:30",
-      temperature: 28,
-      humidity: 65,
-      light: 450,
-    },
-  ]);
+  const [chartData, setChartData] = useState(() => {
+    // Tạo 12 điểm dữ liệu ban đầu
+    const initialData = [];
+    const now = new Date();
+    
+    for (let i = 11; i >= 0; i--) {
+      const time = new Date(now.getTime() - i * 2000); // Mỗi điểm cách nhau 2 giây
+      const timeString = `${time.getHours()}:${time.getMinutes().toString().padStart(2, '0')}:${time.getSeconds().toString().padStart(2, '0')}`;
+      
+      initialData.push({
+        time: timeString,
+        temperature: 26 + Math.random() * 4, // 26-30
+        humidity: 60 + Math.random() * 10, // 60-70
+        light: 350 + Math.random() * 200, // 350-550
+      });
+    }
+    
+    return initialData;
+  });
 
   // Simulate real-time data updates
   useEffect(() => {
@@ -98,23 +55,27 @@ function App() {
         light: Math.round(newLight),
       });
 
-      // Update chart data
+      // Update chart data - Thêm điểm mới vào cuối, xóa điểm cũ ở đầu
       const now = new Date();
-      const timeString = `${now.getHours()}:${now.getMinutes().toString().padStart(2, "0")}`;
+      const timeString = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
 
       setChartData((prevData) => {
-        const newData = [
-          ...prevData.slice(1),
-          {
-            time: timeString,
-            temperature: Math.round(newTemp * 10) / 10,
-            humidity: Math.round(newHumidity),
-            light: Math.round(newLight),
-          },
-        ];
-        return newData;
+        // Giữ tối đa 20 điểm (hiển thị 12, dự trữ 8)
+        const newDataPoint = {
+          time: timeString,
+          temperature: Math.round(newTemp * 10) / 10,
+          humidity: Math.round(newHumidity),
+          light: Math.round(newLight),
+        };
+        
+        // Thêm điểm mới vào cuối và xóa điểm cũ nhất nếu vượt quá 20 điểm
+        const updatedData = [...prevData, newDataPoint];
+        if (updatedData.length > 20) {
+          return updatedData.slice(-20); // Giữ 20 điểm gần nhất
+        }
+        return updatedData;
       });
-    }, 5000); // Update every 5 seconds
+    }, 2000); // Update every 2 seconds
 
     return () => clearInterval(interval);
   }, []);
