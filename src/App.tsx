@@ -37,37 +37,54 @@ function App() {
 
   const [chartData, setChartData] = useState<any[]>([]);
 
-  // Hàm lấy dữ liệu cảm biến (Giữ nguyên)
+// 1. Hàm gọi API lấy dữ liệu cảm biến (Gộp dữ liệu cho ERD mới)
   const fetchSensorData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/sensors/data`);
+      // Lấy 60 bản ghi mới nhất để đảm bảo có đủ dữ liệu vẽ 20 điểm trên biểu đồ 
+      // (Vì bây giờ 1 điểm thời gian cần tới 3 bản ghi riêng biệt)
+      const response = await fetch(`${API_BASE_URL}/sensors/data?limit=60`);
       const result = await response.json();
-      const sensorList = result.data; 
+      const sensorList = result.data;
 
       if (sensorList && sensorList.length > 0) {
-        const latest = sensorList[0];
+        // A. LẤY DỮ LIỆU MỚI NHẤT CHO 3 THẺ CARD (Tìm dòng đầu tiên chứa tên cảm biến tương ứng)
+        const latestTemp = sensorList.find((s: any) => s.sensor_name.toLowerCase().includes('nhiệt độ'))?.value || 0;
+        const latestHumi = sensorList.find((s: any) => s.sensor_name.toLowerCase().includes('độ ẩm'))?.value || 0;
+        const latestLux = sensorList.find((s: any) => s.sensor_name.toLowerCase().includes('ánh sáng'))?.value || 0;
+
         setSensorData({
-          temperature: latest.temperature,
-          humidity: latest.humidity,
-          light: latest.light,
+          temperature: latestTemp,
+          humidity: latestHumi,
+          light: latestLux,
         });
 
-        const formattedChartData = sensorList.slice(0, 20).reverse().map((item: any) => {
-          const time = new Date(item.timestamp);
-          const timeString = `${time.getHours()}:${time.getMinutes().toString().padStart(2, '0')}:${time.getSeconds().toString().padStart(2, '0')}`;
-          
-          return {
-            time: timeString,
-            temperature: item.temperature,
-            humidity: item.humidity,
-            light: item.light,
-          };
+        // B. GỘP DỮ LIỆU CHO BIỂU ĐỒ (Dùng Map để nhóm theo thời gian HH:mm:ss)
+        const chartMap = new Map();
+
+        sensorList.forEach((item: any) => {
+          const dateObj = new Date(item.timestamp);
+          const timeString = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}:${dateObj.getSeconds().toString().padStart(2, '0')}`;
+
+          if (!chartMap.has(timeString)) {
+            chartMap.set(timeString, { time: timeString });
+          }
+
+          const row = chartMap.get(timeString);
+          const name = (item.sensor_name || "").toLowerCase();
+
+          // Bơm giá trị vào nếu chưa có (vì mảng sort DESC, ta lấy giá trị mới nhất của giây đó)
+          if (name.includes('nhiệt độ') && row.temperature === undefined) row.temperature = item.value;
+          if (name.includes('độ ẩm') && row.humidity === undefined) row.humidity = item.value;
+          if (name.includes('ánh sáng') && row.light === undefined) row.light = item.value;
         });
 
+        // Chuyển Map thành Array, lấy 20 điểm đầu tiên, rồi đảo ngược để vẽ đồ thị từ trái sang phải
+        const formattedChartData = Array.from(chartMap.values()).slice(0, 20).reverse();
+        
         setChartData(formattedChartData);
       }
     } catch (error) {
-      console.error("Lỗi lấy dữ liệu:", error);
+      console.error("Lỗi khi lấy dữ liệu cảm biến từ Backend:", error);
     }
   };
 
