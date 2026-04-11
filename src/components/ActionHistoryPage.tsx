@@ -57,7 +57,7 @@ export function ActionHistoryPage() {
       if (result && result.data) {
         const formattedData = result.data.map((item: any) => {
           const dateObj = new Date(item.requested_at);
-          
+
           // Format cứng bằng tay chuẩn DD/MM/YYYY HH:MM:SS
           const pad = (num: number) => num.toString().padStart(2, '0');
           const timeString = `${pad(dateObj.getDate())}/${pad(dateObj.getMonth() + 1)}/${dateObj.getFullYear()} ${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`;
@@ -88,7 +88,7 @@ export function ActionHistoryPage() {
     const intervalId = setInterval(() => fetchHistoryData(false), 2000);
     return () => clearInterval(intervalId);
   }, [
-    currentPage, itemsPerPage, sortField, sortDirection, 
+    currentPage, itemsPerPage, sortField, sortDirection,
     filterDevice, searchBy, searchKeyword
   ]);
 
@@ -109,11 +109,10 @@ export function ActionHistoryPage() {
         <button
           key={i}
           onClick={() => setCurrentPage(i)}
-          className={`px-3 py-1 rounded min-w-[32px] border transition-colors ${
-            currentPage === i
-              ? "bg-blue-600 text-white border-blue-600"
-              : "bg-white text-gray-700 hover:bg-gray-100 border-gray-200"
-          }`}
+          className={`px-3 py-1 rounded min-w-[32px] border transition-colors ${currentPage === i
+            ? "bg-blue-600 text-white border-blue-600"
+            : "bg-white text-gray-700 hover:bg-gray-100 border-gray-200"
+            }`}
         >
           {i}
         </button>
@@ -135,7 +134,7 @@ export function ActionHistoryPage() {
       {/* TOOLBAR TỐI GIẢN CHUẨN MỚI */}
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
         <div className="flex flex-col md:flex-row items-center gap-4">
-          
+
           {/* Lọc theo Thiết bị */}
           <Select value={filterDevice} onValueChange={(val) => { setFilterDevice(val); setCurrentPage(1); }}>
             <SelectTrigger className="w-full md:w-48 bg-gray-50">
@@ -178,11 +177,11 @@ export function ActionHistoryPage() {
       {/* BẢNG DỮ LIỆU LỊCH SỬ */}
       <div className="bg-white rounded-lg shadow-lg overflow-hidden relative">
         {isLoading && (
-            <div className="absolute inset-0 bg-white/40 flex items-center justify-center z-10 backdrop-blur-[1px]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
+          <div className="absolute inset-0 bg-white/40 flex items-center justify-center z-10 backdrop-blur-[1px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
         )}
-        
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-100 border-b">
@@ -212,27 +211,31 @@ export function ActionHistoryPage() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {data.length === 0 && !isLoading ? (
-                  <tr><td colSpan={5} className="text-center py-8 text-gray-500">Không tìm thấy lịch sử nào</td></tr>
+                <tr><td colSpan={5} className="text-center py-8 text-gray-500">Không tìm thấy lịch sử nào</td></tr>
               ) : (
-                  data.map((record) => (
-                    <tr key={record.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-gray-500 font-mono text-sm">#{record.id}</td>
-                      <td className="px-6 py-4 text-gray-800 font-medium">{record.device}</td>
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 border">{record.action}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            record.status === "Success" ? "bg-green-100 text-green-700" :
-                            record.status === "Pending" ? "bg-yellow-100 text-yellow-700 animate-pulse" :
-                            "bg-red-100 text-red-700"
+                data.map((record) => (
+                  <tr key={record.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-gray-500 font-mono text-sm">#{record.id}</td>
+                    <td className="px-6 py-4 text-gray-800 font-medium">{record.device}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium border ${record.action === "ON"
+                        ? "bg-blue-100 text-blue-700 border-blue-200"
+                        : "bg-gray-100 text-gray-700 border-gray-200"
                         }`}>
-                          {record.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-600">{record.time}</td>
-                    </tr>
-                  ))
+                        {record.action}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${record.status === "Success" ? "bg-green-100 text-green-700" :
+                        record.status === "Pending" ? "bg-yellow-100 text-yellow-700 animate-pulse" :
+                          "bg-red-100 text-red-700"
+                        }`}>
+                        {record.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">{record.time}</td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
