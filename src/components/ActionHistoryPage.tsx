@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { API_BASE_URL } from '../utils/constants.ts';
+import { fetchHistoryDataAPI } from "../services/api";
 
 interface ActionRecord {
   id: string;
@@ -33,9 +33,9 @@ export function ActionHistoryPage() {
 
   // === 2. BỘ LỌC & TÌM KIẾM MỚI ===
   const [filterDevice, setFilterDevice] = useState<string>("all");
-  const [filterAction, setFilterAction] = useState<string>("all"); // 👉 THÊM MỚI
-  const [filterStatus, setFilterStatus] = useState<string>("all"); // 👉 THÊM MỚI
-  const [searchBy, setSearchBy] = useState<string>("info"); // "info" hoặc "time"
+  const [filterAction, setFilterAction] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [searchBy, setSearchBy] = useState<string>("info");
   const [searchKeyword, setSearchKeyword] = useState("");
 
   // === 3. HÀM FETCH DỮ LIỆU TỪ BACKEND ===
@@ -43,20 +43,17 @@ export function ActionHistoryPage() {
     try {
       if (showLoading) setIsLoading(true);
 
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: itemsPerPage.toString(),
+      const result = await fetchHistoryDataAPI({
+        page: currentPage,
+        limit: itemsPerPage,
         sortField: sortField,
         sortDir: sortDirection,
-        filterDevice: filterDevice, // all, FAN, AC, LIGHT
-        filterAction,  // 👉 Gửi lên Backend
-        filterStatus,  // 👉 Gửi lên Backend
-        searchBy: searchBy,         // info hoặc time
+        filterDevice: filterDevice,
+        filterAction,
+        filterStatus,
+        searchBy: searchBy,
         search: searchKeyword
       });
-
-      const response = await fetch(`${API_BASE_URL}/history?${params}`);
-      const result = await response.json();
 
       if (result && result.data) {
         const formattedData = result.data.map((item: any) => {

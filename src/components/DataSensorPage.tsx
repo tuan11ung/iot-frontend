@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { API_BASE_URL } from '../utils/constants.ts'; // Hoặc cấu hình tùy file của bạn
+import { fetchSensorDataAPI } from "../services/api";
 
 // Interface mới chuẩn theo ERD
 interface SensorRecord {
@@ -42,18 +42,15 @@ export function DataSensorPage() {
     try {
       if (showLoading) setIsLoading(true);
       
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: itemsPerPage.toString(),
+      const result = await fetchSensorDataAPI({
+        page: currentPage,
+        limit: itemsPerPage,
         sortField: sortField,
         sortDir: sortDirection,
-        sensorType: filterSensor, // all, temperature, humidity, light...
-        searchBy: searchBy,       // value hoặc time
-        search: searchKeyword     // Từ khóa nhập vào
+        sensorType: filterSensor,
+        searchBy: searchBy,
+        search: searchKeyword
       });
-
-      const response = await fetch(`${API_BASE_URL}/sensors/data?${params}`);
-      const result = await response.json();
 
       if (result && result.data) {
         const formattedData = result.data.map((item: any) => {

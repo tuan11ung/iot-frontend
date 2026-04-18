@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { DashboardPage } from "./components/DashboardPage";
 import { ProfilePage } from "./components/ProfilePage";
 import { DataSensorPage } from "./components/DataSensorPage";
 import { ActionHistoryPage } from "./components/ActionHistoryPage";
-import { API_BASE_URL } from './utils/constants.ts'
+import { fetchSensorDataAPI, fetchHistoryDataAPI, controlDeviceAPI, fetchDevicesStatusAPI } from "./services/api";
 
 function App() {
   const [currentPage, setCurrentPage] = useState(() => {
@@ -33,6 +33,11 @@ function App() {
     heater: false
   });
 
+  const loadingDevicesRef = useRef(loadingDevices);
+  useEffect(() => {
+    loadingDevicesRef.current = loadingDevices;
+  }, [loadingDevices]);
+
   const [sensorData, setSensorData] = useState({
     temperature: 0,
     humidity: 0,
@@ -46,8 +51,7 @@ function App() {
     try {
       // Lấy 60 bản ghi mới nhất để đảm bảo có đủ dữ liệu vẽ 20 điểm trên biểu đồ 
       // (Vì bây giờ 1 điểm thời gian cần tới 3 bản ghi riêng biệt)
-      const response = await fetch(`${API_BASE_URL}/sensors/data?limit=60`);
-      const result = await response.json();
+      const result = await fetchSensorDataAPI({ limit: 60 });
       const sensorList = result.data;
 
       if (sensorList && sensorList.length > 0) {
@@ -92,9 +96,44 @@ function App() {
     }
   };
 
+  const fetchDevicesStatus = async () => {
+    try {
+      const result = await fetchDevicesStatusAPI();
+      const deviceList = result.data;
+
+      if (deviceList && deviceList.length > 0) {
+        setDevices((prev) => {
+          const newDevices = { ...prev };
+          let hasChanges = false;
+
+          deviceList.forEach((d: any) => {
+            const name = d.name.toLowerCase() as keyof typeof newDevices;
+
+            // Chỉ cập nhật từ DB nếu thiết bị KHÔNG ĐANG TRONG TRẠNG THÁI LOADING
+            if (['fan', 'ac', 'light'].includes(name) && !loadingDevicesRef.current[name]) {
+              const dbState = d.current_state === 'ON';
+              if (newDevices[name] !== dbState) {
+                newDevices[name] = dbState;
+                hasChanges = true;
+              }
+            }
+          });
+
+          return hasChanges ? newDevices : prev;
+        });
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy trạng thái thiết bị từ Backend:", error);
+    }
+  };
+
   useEffect(() => {
     fetchSensorData();
-    const interval = setInterval(fetchSensorData, 2000);
+    fetchDevicesStatus();
+    const interval = setInterval(() => {
+      fetchSensorData();
+      fetchDevicesStatus();
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -113,12 +152,7 @@ function App() {
 
     try {
       // B. Gửi lệnh xuống Server
-      const response = await fetch(`${API_BASE_URL}/control`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ device_id: device.toUpperCase(), action: actionCommand }),
-      });
-      const result = await response.json();
+      const result = await controlDeviceAPI(device.toUpperCase(), actionCommand);
       const actionId = result.data?._id; // Lấy ID của lệnh Pending vừa được tạo
 
       if (!actionId) throw new Error("Không nhận được ID lệnh");
@@ -129,8 +163,7 @@ function App() {
         attempts++;
         try {
           // Gọi API History lấy 10 lệnh mới nhất để check
-          const historyRes = await fetch(`${API_BASE_URL}/history?limit=10`);
-          const historyResult = await historyRes.json();
+          const historyResult = await fetchHistoryDataAPI({ limit: 10 });
 
           // Tìm đúng lệnh của mình
           const myAction = historyResult.data.find((item: any) => item._id === actionId);
