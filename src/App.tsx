@@ -15,11 +15,13 @@ function App() {
   useEffect(() => {
     localStorage.setItem("iot_current_page", currentPage);
   }, [currentPage]);
-  
+
   const [devices, setDevices] = useState({
     fan: false,
     ac: false,
     light: false,
+    pump: false,
+    heater: false
   });
 
   // 1. THÊM STATE ĐỂ QUẢN LÝ TRẠNG THÁI LOADING CỦA TỪNG NÚT
@@ -27,6 +29,8 @@ function App() {
     fan: false,
     ac: false,
     light: false,
+    pump: false,
+    heater: false
   });
 
   const [sensorData, setSensorData] = useState({
@@ -37,7 +41,7 @@ function App() {
 
   const [chartData, setChartData] = useState<any[]>([]);
 
-// 1. Hàm gọi API lấy dữ liệu cảm biến (Gộp dữ liệu cho ERD mới)
+  // 1. Hàm gọi API lấy dữ liệu cảm biến (Gộp dữ liệu cho ERD mới)
   const fetchSensorData = async () => {
     try {
       // Lấy 60 bản ghi mới nhất để đảm bảo có đủ dữ liệu vẽ 20 điểm trên biểu đồ 
@@ -80,7 +84,7 @@ function App() {
 
         // Chuyển Map thành Array, lấy 20 điểm đầu tiên, rồi đảo ngược để vẽ đồ thị từ trái sang phải
         const formattedChartData = Array.from(chartMap.values()).slice(0, 20).reverse();
-        
+
         setChartData(formattedChartData);
       }
     } catch (error) {
@@ -127,7 +131,7 @@ function App() {
           // Gọi API History lấy 10 lệnh mới nhất để check
           const historyRes = await fetch(`${API_BASE_URL}/history?limit=10`);
           const historyResult = await historyRes.json();
-          
+
           // Tìm đúng lệnh của mình
           const myAction = historyResult.data.find((item: any) => item._id === actionId);
 
@@ -136,7 +140,7 @@ function App() {
             clearInterval(checkInterval);
             setLoadingDevices((prev) => ({ ...prev, [device]: false }));
             console.log(`Lệnh ${actionCommand} đã chạy thành công!`);
-          } 
+          }
           else if (attempts >= 10) {
             // ⏰ HẾT 10 GIÂY MÀ ESP32 VẪN IM LẶNG (TIMEOUT)
             clearInterval(checkInterval);
@@ -167,7 +171,7 @@ function App() {
             chartData={chartData}
             devices={devices}
             // 3. TRUYỀN BIẾN LOADING XUỐNG DASHBOARD ĐỂ NÓ XỬ LÝ GIAO DIỆN
-            loadingDevices={loadingDevices} 
+            loadingDevices={loadingDevices}
             onDeviceToggle={handleDeviceToggle}
           />
         );

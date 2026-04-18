@@ -33,6 +33,8 @@ export function ActionHistoryPage() {
 
   // === 2. BỘ LỌC & TÌM KIẾM MỚI ===
   const [filterDevice, setFilterDevice] = useState<string>("all");
+  const [filterAction, setFilterAction] = useState<string>("all"); // 👉 THÊM MỚI
+  const [filterStatus, setFilterStatus] = useState<string>("all"); // 👉 THÊM MỚI
   const [searchBy, setSearchBy] = useState<string>("info"); // "info" hoặc "time"
   const [searchKeyword, setSearchKeyword] = useState("");
 
@@ -47,6 +49,8 @@ export function ActionHistoryPage() {
         sortField: sortField,
         sortDir: sortDirection,
         filterDevice: filterDevice, // all, FAN, AC, LIGHT
+        filterAction,  // 👉 Gửi lên Backend
+        filterStatus,  // 👉 Gửi lên Backend
         searchBy: searchBy,         // info hoặc time
         search: searchKeyword
       });
@@ -89,7 +93,7 @@ export function ActionHistoryPage() {
     return () => clearInterval(intervalId);
   }, [
     currentPage, itemsPerPage, sortField, sortDirection,
-    filterDevice, searchBy, searchKeyword
+    filterDevice, filterAction, filterStatus, searchBy, searchKeyword
   ]);
 
   // === 4. UI COMPONENTS CỦA BẢNG ===
@@ -133,7 +137,7 @@ export function ActionHistoryPage() {
 
       {/* TOOLBAR TỐI GIẢN CHUẨN MỚI */}
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-        <div className="flex flex-col md:flex-row items-center gap-4">
+        <div className="flex flex-col md:flex-row items-center gap-4 flex-wrap">
 
           {/* Lọc theo Thiết bị */}
           <Select value={filterDevice} onValueChange={(val) => { setFilterDevice(val); setCurrentPage(1); }}>
@@ -145,6 +149,29 @@ export function ActionHistoryPage() {
               <SelectItem value="FAN">Quạt</SelectItem>
               <SelectItem value="AC">Điều hòa</SelectItem>
               <SelectItem value="LIGHT">Đèn</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterAction} onValueChange={(val) => { setFilterAction(val); setCurrentPage(1); }}>
+            <SelectTrigger className="w-full md:w-36 bg-gray-50">
+              <SelectValue placeholder="Hành động" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Mọi hành động</SelectItem>
+              <SelectItem value="ON">Chỉ lệnh ON</SelectItem>
+              <SelectItem value="OFF">Chỉ lệnh OFF</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterStatus} onValueChange={(val) => { setFilterStatus(val); setCurrentPage(1); }}>
+            <SelectTrigger className="w-full md:w-40 bg-gray-50">
+              <SelectValue placeholder="Trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Mọi trạng thái</SelectItem>
+              <SelectItem value="Success">Thành công (Success)</SelectItem>
+              <SelectItem value="Pending">Đang chờ (Pending)</SelectItem>
+              <SelectItem value="Failed">Thất bại (Failed)</SelectItem>
             </SelectContent>
           </Select>
 
