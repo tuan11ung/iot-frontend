@@ -26,15 +26,20 @@ export const fetchSensorDataAPI = async (params?: Record<string, any>) => {
 };
 
 // Action History
-export const fetchHistoryDataAPI = async (params?: Record<string, any>) => {
-  const response = await fetch(`${API_BASE_URL}/history${buildQueryString(params)}`);
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.statusText}`);
-  }
-  return response.json();
-};
+export const fetchHistoryDataAPI = async (queryParams: any) => {
+  const queryString = buildQueryString(queryParams)
+  const response = await fetch(`${API_BASE_URL}/history${queryString}`)
+  if (!response.ok) throw new Error(`API Error: ${response.statusText}`)
+  return response.json()
+}
 
-// Device Control
+export const fetchDeviceStatisticsAPI = async () => {
+  const response = await fetch(`${API_BASE_URL}/history/statistics`)
+  if (!response.ok) throw new Error(`API Error: ${response.statusText}`)
+  return response.json()
+}
+
+// ================= DEVICE CONTROL =================
 export const controlDeviceAPI = async (device_id: string, action: string) => {
   const response = await fetch(`${API_BASE_URL}/control`, {
     method: "POST",

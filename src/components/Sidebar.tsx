@@ -1,4 +1,4 @@
-import { LayoutDashboard, User, Database, History } from 'lucide-react';
+import { LayoutDashboard, User, Database, History, BarChart } from 'lucide-react';
 
 interface SidebarProps {
   currentPage: string;
@@ -11,6 +11,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'data-sensor', label: 'Data Sensor', icon: Database },
     { id: 'action-history', label: 'Action History', icon: History },
+    { id: 'statistics', label: 'Device Statistics', icon: BarChart },
   ];
 
   return (

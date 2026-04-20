@@ -146,6 +146,8 @@ export function ActionHistoryPage() {
               <SelectItem value="FAN">Quạt</SelectItem>
               <SelectItem value="AC">Điều hòa</SelectItem>
               <SelectItem value="LIGHT">Đèn</SelectItem>
+              <SelectItem value="PUMP">Máy bơm</SelectItem>
+              <SelectItem value="HEATER">Lò sưởi</SelectItem>
             </SelectContent>
           </Select>
 

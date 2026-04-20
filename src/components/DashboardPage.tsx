@@ -1,43 +1,73 @@
+import { useState, useEffect } from "react";
 import { Thermometer, Droplets, Sun } from 'lucide-react';
 import { SensorChart } from './SensorChart';
 import { DeviceControls } from './DeviceControls';
+import { fetchSensorDataAPI } from "../services/api";
 
-interface SensorData {
-  temperature: number;
-  humidity: number;
-  light: number;
-}
+export function DashboardPage() {
+  const [sensorData, setSensorData] = useState({
+    temperature: 0,
+    humidity: 0,
+    light: 0,
+  });
 
-interface DashboardPageProps {
-  sensorData: SensorData;
-  chartData: Array<{
-    time: string;
-    temperature: number;
-    humidity: number;
-    light: number;
-  }>;
-  // Khai báo kiểu cho biến loading
-  loadingDevices: { fan: boolean; ac: boolean; light: boolean };
-  devices: {
-    fan: boolean;
-    ac: boolean;
-    light: boolean;
+  const [chartData, setChartData] = useState<any[]>([]);
+
+  const fetchSensorData = async () => {
+    try {
+      const result = await fetchSensorDataAPI({ limit: 60 });
+      const sensorList = result.data;
+
+      if (sensorList && sensorList.length > 0) {
+        const latestTemp = sensorList.find((s: any) => s.sensor_name.toLowerCase().includes('nhiệt độ'))?.value || 0;
+        const latestHumi = sensorList.find((s: any) => s.sensor_name.toLowerCase().includes('độ ẩm'))?.value || 0;
+        const latestLux = sensorList.find((s: any) => s.sensor_name.toLowerCase().includes('ánh sáng'))?.value || 0;
+
+        setSensorData({
+          temperature: latestTemp,
+          humidity: latestHumi,
+          light: latestLux,
+        });
+
+        const chartMap = new Map();
+
+        sensorList.forEach((item: any) => {
+          const dateObj = new Date(item.timestamp);
+          const timeString = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}:${dateObj.getSeconds().toString().padStart(2, '0')}`;
+
+          if (!chartMap.has(timeString)) {
+            chartMap.set(timeString, { time: timeString });
+          }
+
+          const row = chartMap.get(timeString);
+          const name = (item.sensor_name || "").toLowerCase();
+
+          if (name.includes('nhiệt độ') && row.temperature === undefined) row.temperature = item.value;
+          if (name.includes('độ ẩm') && row.humidity === undefined) row.humidity = item.value;
+          if (name.includes('ánh sáng') && row.light === undefined) row.light = item.value;
+        });
+
+        const formattedChartData = Array.from(chartMap.values()).slice(0, 20).reverse();
+
+        setChartData(formattedChartData);
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy dữ liệu cảm biến từ Backend:", error);
+    }
   };
-  onDeviceToggle: (device: 'fan' | 'ac' | 'light') => void;
-}
 
-export function DashboardPage({ 
-  sensorData, 
-  chartData, 
-  devices, 
-  loadingDevices, // <-- 1. Nhận biến loadingDevices từ App.tsx truyền xuống
-  onDeviceToggle 
-}: DashboardPageProps) {
-  
+  useEffect(() => {
+    fetchSensorData();
+    const interval = setInterval(() => {
+      fetchSensorData();
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="p-8">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Dashboard</h2>
-      
+
       {/* Sensor Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-linear-to-br from-orange-500 to-red-500 rounded-lg p-6 text-white shadow-lg transform transition duration-300 hover:scale-105">
@@ -77,12 +107,7 @@ export function DashboardPage({
           <SensorChart data={chartData} />
         </div>
         <div>
-          {/* 2. Truyền loadingDevices tiếp xuống cho component DeviceControls */}
-          <DeviceControls 
-            devices={devices} 
-            loadingDevices={loadingDevices} 
-            onToggle={onDeviceToggle} 
-          />
+          <DeviceControls />
         </div>
       </div>
     </div>
