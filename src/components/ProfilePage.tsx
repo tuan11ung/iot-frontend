@@ -13,7 +13,7 @@ export function ProfilePage() {
   };
 
   const handleDownloadPDF = () => {
-    console.log('Downloading PDF...');
+    window.open(`https://drive.google.com/file/d/18l49NXdXJDGgyz1PuCehOnKcWW5auQXa/view?usp=sharing`, '_blank');
   };
 
   const handleAPIDocsClick = () => {
@@ -24,20 +24,20 @@ export function ProfilePage() {
   return (
     // 1. Dùng flex-col và chiếm tối thiểu chiều cao màn hình để tạo không gian
     <div className="p-8 flex flex-col min-h-screen overflow-y-auto">
-      
+
       {/* 2. Tiêu đề để tự do, nó sẽ tự động dạt sang góc trên bên trái */}
       <h2 className="text-2xl font-bold text-gray-800 mb-6 shrink-0">Profile</h2>
-      
+
       {/* 3. Wrapper này dùng flex-1 để đẩy căng không gian còn lại, và dùng items-center justify-center để căn giữa Box */}
-      <div className="flex-1 flex items-center justify-center"> 
+      <div className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-3xl my-auto">
           <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
-            
+
             {/* Avatar and Name */}
             <div className="flex flex-col items-center mb-8 pb-8 border-b border-gray-200">
-              <img 
-                src={userData.avatar} 
-                alt="Avatar" 
+              <img
+                src={userData.avatar}
+                alt="Avatar"
                 className="w-32 h-32 object-cover rounded-full border-4 border-blue-500 mb-4 shadow-md"
               />
               <h3 className="text-2xl font-bold text-gray-800">{userData.name}</h3>
@@ -66,9 +66,9 @@ export function ProfilePage() {
                 <Github className="w-5 h-5 text-blue-600" />
                 <div className="flex-1 overflow-hidden">
                   <p className="text-sm text-gray-500">Github</p>
-                  <a 
-                    href={userData.github} 
-                    target="_blank" 
+                  <a
+                    href={userData.github}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium text-blue-600 hover:text-blue-800 hover:underline truncate block"
                   >
@@ -81,9 +81,9 @@ export function ProfilePage() {
                 <Figma className="w-5 h-5 text-blue-600" />
                 <div className="flex-1 overflow-hidden">
                   <p className="text-sm text-gray-500">Figma</p>
-                  <a 
-                    href={userData.figma} 
-                    target="_blank" 
+                  <a
+                    href={userData.figma}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium text-blue-600 hover:text-blue-800 hover:underline truncate block"
                   >
@@ -96,9 +96,9 @@ export function ProfilePage() {
                 <Box className="w-5 h-5 text-blue-600" />
                 <div className="flex-1 overflow-hidden">
                   <p className="text-sm text-gray-500">Draw.io</p>
-                  <a 
-                    href={userData.drawio} 
-                    target="_blank" 
+                  <a
+                    href={userData.drawio}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium text-blue-600 hover:text-blue-800 hover:underline truncate block"
                   >
@@ -110,17 +110,17 @@ export function ProfilePage() {
 
             {/* Action Buttons */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button 
+              <button
                 onClick={handleDownloadPDF}
-                className="flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 hover:shadow-lg transition-all"
+                className="flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 hover:shadow-lg transition-all cursor-pointer"
               >
                 <FileDown className="w-5 h-5" />
                 Download PDF
               </button>
 
-              <button 
+              <button
                 onClick={handleAPIDocsClick}
-                className="flex items-center justify-center gap-2 bg-gray-800 text-white py-3 rounded-lg font-medium hover:bg-gray-900 hover:shadow-lg transition-all"
+                className="flex items-center justify-center gap-2 bg-gray-800 text-white py-3 rounded-lg font-medium hover:bg-gray-900 hover:shadow-lg transition-all cursor-pointer"
               >
                 <Book className="w-5 h-5" />
                 API DOCS

@@ -33,12 +33,20 @@ export function DeviceStatisticsPage() {
         rawData.forEach((item: any) => {
           const dt = item.date;
           if (!groupedMap.has(dt)) {
-            groupedMap.set(dt, { date: dt, FAN: 0, AC: 0, LIGHT: 0, PUMP: 0, HEATER: 0 });
+            groupedMap.set(dt, {
+              date: dt,
+              FAN: { ON: 0, OFF: 0 },
+              AC: { ON: 0, OFF: 0 },
+              LIGHT: { ON: 0, OFF: 0 },
+              PUMP: { ON: 0, OFF: 0 },
+              HEATER: { ON: 0, OFF: 0 }
+            });
           }
           const dayObj = groupedMap.get(dt);
           const dev = item.device_id.toUpperCase();
-          if (dayObj[dev] !== undefined) {
-             dayObj[dev] += parseInt(item.total, 10);
+          const act = item.action?.toUpperCase(); // "ON" or "OFF"
+          if (dayObj[dev] && (act === 'ON' || act === 'OFF')) {
+            dayObj[dev][act] += parseInt(item.total, 10);
           }
         });
 
@@ -81,11 +89,11 @@ export function DeviceStatisticsPage() {
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold text-gray-800">Thống Kê Bật Thiết Bị</h2>
+        <h2 className="text-3xl font-bold text-gray-800">Thống Kê Thao Tác Thiết Bị</h2>
       </div>
 
       <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-        
+
         {/* Calendar Header */}
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-gray-700 capitalize">
@@ -116,7 +124,7 @@ export function DeviceStatisticsPage() {
               </div>
             ))}
           </div>
-          
+
           <div className="grid grid-cols-7 bg-gray-200 gap-px">
             {loading ? (
               <div className="col-span-7 h-64 flex items-center justify-center bg-white">
@@ -126,8 +134,14 @@ export function DeviceStatisticsPage() {
               calendarCells.map((day, idx) => {
                 const dateKey = format(day, "yyyy-MM-dd");
                 const dayData = dataMap.get(dateKey);
-                const totalActivity = dayData ? (dayData.FAN + dayData.AC + dayData.LIGHT + dayData.PUMP + dayData.HEATER) : 0;
-                
+                const totalActivity = dayData ? (
+                  dayData.FAN.ON + dayData.FAN.OFF +
+                  dayData.AC.ON + dayData.AC.OFF +
+                  dayData.LIGHT.ON + dayData.LIGHT.OFF +
+                  dayData.PUMP.ON + dayData.PUMP.OFF +
+                  dayData.HEATER.ON + dayData.HEATER.OFF
+                ) : 0;
+
                 const isCurrentMonth = isSameMonth(day, monthStart);
                 const isTodayDate = isToday(day);
 
@@ -155,37 +169,52 @@ export function DeviceStatisticsPage() {
                           </div>
                         </div>
                       </HoverCardTrigger>
-                      
-                      <HoverCardContent 
-                        side="top" 
-                        align="center" 
+
+                      <HoverCardContent
+                        side="top"
+                        align="center"
                         sideOffset={10}
-                        className="w-56 bg-gray-900 border-gray-800 text-white shadow-xl rounded-xl z-50 p-4"
+                        className="w-72 bg-gray-900 border-gray-800 text-white shadow-xl rounded-xl z-50 p-4"
                       >
                         <p className="font-semibold text-sm mb-3 text-center border-b border-gray-700 pb-2 text-gray-100">
                           Ngày {format(day, "dd/MM/yyyy")}
                         </p>
                         <div className="space-y-2 text-sm pt-1">
-                           <div className="flex justify-between items-center">
-                             <span className="text-gray-300 font-medium">Quạt:</span> 
-                             <span className="font-mono bg-blue-500/20 px-2 py-0.5 rounded text-blue-300">{dayData.FAN}</span>
-                           </div>
-                           <div className="flex justify-between items-center">
-                             <span className="text-gray-300 font-medium">Điều hoà:</span> 
-                             <span className="font-mono bg-cyan-500/20 px-2 py-0.5 rounded text-cyan-300">{dayData.AC}</span>
-                           </div>
-                           <div className="flex justify-between items-center">
-                             <span className="text-gray-300 font-medium">Đèn:</span> 
-                             <span className="font-mono bg-yellow-500/20 px-2 py-0.5 rounded text-yellow-300">{dayData.LIGHT}</span>
-                           </div>
-                           <div className="flex justify-between items-center">
-                             <span className="text-gray-300 font-medium">Máy bơm:</span> 
-                             <span className="font-mono bg-purple-500/20 px-2 py-0.5 rounded text-purple-300">{dayData.PUMP}</span>
-                           </div>
-                           <div className="flex justify-between items-center">
-                             <span className="text-gray-300 font-medium">Lò sưởi:</span> 
-                             <span className="font-mono bg-red-500/20 px-2 py-0.5 rounded text-red-300">{dayData.HEATER}</span>
-                           </div>
+                          <div className="flex justify-between items-center bg-gray-800/50 p-2 rounded-lg">
+                            <span className="text-gray-300 font-medium w-20">Quạt:</span>
+                            <div className="flex space-x-2 text-xs">
+                              <span className="bg-green-500/20 px-2 py-0.5 rounded border border-green-500/30 text-green-400">Bật: {dayData.FAN.ON}</span>
+                              <span className="bg-red-500/20 px-2 py-0.5 rounded border border-red-500/30 text-red-400">Tắt: {dayData.FAN.OFF}</span>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center bg-gray-800/50 p-2 rounded-lg">
+                            <span className="text-gray-300 font-medium w-20">Điều hoà:</span>
+                            <div className="flex space-x-2 text-xs">
+                              <span className="bg-green-500/20 px-2 py-0.5 rounded border border-green-500/30 text-green-400">Bật: {dayData.AC.ON}</span>
+                              <span className="bg-red-500/20 px-2 py-0.5 rounded border border-red-500/30 text-red-400">Tắt: {dayData.AC.OFF}</span>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center bg-gray-800/50 p-2 rounded-lg">
+                            <span className="text-gray-300 font-medium w-20">Đèn:</span>
+                            <div className="flex space-x-2 text-xs">
+                              <span className="bg-green-500/20 px-2 py-0.5 rounded border border-green-500/30 text-green-400">Bật: {dayData.LIGHT.ON}</span>
+                              <span className="bg-red-500/20 px-2 py-0.5 rounded border border-red-500/30 text-red-400">Tắt: {dayData.LIGHT.OFF}</span>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center bg-gray-800/50 p-2 rounded-lg">
+                            <span className="text-gray-300 font-medium w-20">Máy bơm:</span>
+                            <div className="flex space-x-2 text-xs">
+                              <span className="bg-green-500/20 px-2 py-0.5 rounded border border-green-500/30 text-green-400">Bật: {dayData.PUMP.ON}</span>
+                              <span className="bg-red-500/20 px-2 py-0.5 rounded border border-red-500/30 text-red-400">Tắt: {dayData.PUMP.OFF}</span>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center bg-gray-800/50 p-2 rounded-lg">
+                            <span className="text-gray-300 font-medium w-20">Lò sưởi:</span>
+                            <div className="flex space-x-2 text-xs">
+                              <span className="bg-green-500/20 px-2 py-0.5 rounded border border-green-500/30 text-green-400">Bật: {dayData.HEATER.ON}</span>
+                              <span className="bg-red-500/20 px-2 py-0.5 rounded border border-red-500/30 text-red-400">Tắt: {dayData.HEATER.OFF}</span>
+                            </div>
+                          </div>
                         </div>
                       </HoverCardContent>
                     </HoverCard>
@@ -214,7 +243,7 @@ export function DeviceStatisticsPage() {
             )}
           </div>
         </div>
-        
+
         {/* Chú giải */}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600">
           <div className="flex items-center gap-1.5"><div className="w-4 h-4 rounded bg-gray-50 border"></div> Không có thao tác</div>
@@ -222,7 +251,7 @@ export function DeviceStatisticsPage() {
           <div className="flex items-center gap-1.5"><div className="w-4 h-4 rounded shadow-sm bg-blue-300"></div> Vừa (4-10 lần)</div>
           <div className="flex items-center gap-1.5"><div className="w-4 h-4 rounded shadow-md bg-blue-500"></div> Nhiều (&gt;10 lần)</div>
         </div>
-        
+
       </div>
     </div>
   );
